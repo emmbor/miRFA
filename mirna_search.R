@@ -162,30 +162,6 @@ mirna_search<-function(miRNA){
 
   #Union of target genes 
   uni<-union(tarbase_g,union(microT_g,targetscan_g))
-
-  ###Functional enrichment before evaluation
-  
-  ##Convert hgnc symbols to entrez gene id
-  deID<-as.numeric(unlist(mapIds(org.Hs.eg.db,keys=uni,
-                                column="ENTREZID",keytype="SYMBOL",multiVals="list")))
-  
-  #GO terms
-  go<-goana(deID, FDR = 0.05, trend = FALSE, species="Hs")
-  sign_GO<-subset(go,P.DE<=0.05,select=c(Term,Ont,N,DE,P.DE))
-  GO_terms<-subset(sign_GO,DE>=5,select=c(Term,Ont,N,DE,P.DE))
-  attach(GO_terms)
-  write.table(GO_terms[order(-DE),],paste0('Functional_enrichment/Before_evaluation/GO_',miRNA,'.txt'),
-              sep=";")
-  detach(GO_terms)
-  
-  #KEGG pathways
-  kegg<-kegga(deID, FDR = 0.05, trend = FALSE, species="Hs")
-  sign_kegg<-subset(kegg,P.DE<=0.05,select=c(Pathway,N,DE,P.DE))
-  kegg_paths<-subset(sign_kegg,DE>=5,select=c(Pathway,N,DE,P.DE))
-  attach(kegg_paths)
-  write.table(kegg_paths[order(-DE),],paste0('Functional_enrichment/Before_evaluation/KEGG_',miRNA,'.txt'),
-              sep=";")
-  detach(kegg_paths)
   
   ###Correlation analyses
   setwd("/Users/emmyborgmastars/Documents/Rstats/databases")
@@ -203,8 +179,8 @@ mirna_search<-function(miRNA){
   adj_P_s<-p.adjust(prot_df$P_value, method="BH")
   prot_df<-cbind(prot_df,adj_P_s)
   temp_sign_prot<-subset(prot_df, adj_P_s < 0.05, select=c(miRNA,Protein,PCC,P_value,adj_P_s))
-  pos_temp_sign_prot<-subset(temp_sign_prot, PCC >= 0.3, select=c(miRNA,Protein,PCC,P_value,adj_P_s))
-  neg_temp_sign_prot<-subset(temp_sign_prot, PCC <= -0.3, select=c(miRNA,Protein,PCC,P_value,adj_P_s))
+  pos_temp_sign_prot<-subset(temp_sign_prot, PCC > 0, select=c(miRNA,Protein,PCC,P_value,adj_P_s))
+  neg_temp_sign_prot<-subset(temp_sign_prot, PCC <= 0, select=c(miRNA,Protein,PCC,P_value,adj_P_s))
   proteins<-union(as.vector(pos_temp_sign_prot$Protein),as.vector(neg_temp_sign_prot$Protein))
   
   #mRNAs
@@ -220,8 +196,8 @@ mirna_search<-function(miRNA){
   adj_P_p<-p.adjust(mRNA_df$P_value, method="BH")
   mRNA_df<-cbind(mRNA_df,adj_P_p)
   temp_sign_mRNA<-subset(mRNA_df, adj_P_p < 0.05, select=c(miRNA,Gene,PCC,P_value,adj_P_p))
-  pos_temp_sign_mRNA<-subset(temp_sign_mRNA, PCC >= 0.3, select=c(miRNA,Gene,PCC,P_value,adj_P_p))
-  neg_temp_sign_mRNA<-subset(temp_sign_mRNA, PCC <= -0.3, select=c(miRNA,Gene,PCC,P_value,adj_P_p))
+  pos_temp_sign_mRNA<-subset(temp_sign_mRNA, PCC > 0, select=c(miRNA,Gene,PCC,P_value,adj_P_p))
+  neg_temp_sign_mRNA<-subset(temp_sign_mRNA, PCC <= 0, select=c(miRNA,Gene,PCC,P_value,adj_P_p))
   mRNAs<-union(as.vector(pos_temp_sign_mRNA$Gene),as.vector(neg_temp_sign_mRNA$Gene))
   
   uni2<-union(mRNAs,proteins)
