@@ -166,6 +166,7 @@ mirna_search<-function(miRNA){
 
   #Union of target genes 
   uni<-union(tarbase_g,union(microT_g,targetscan_g))
+  write.table(uni,paste0('results/Target_genes/union_targets_',miRNA,'.txt'))
   
   ###Correlation analyses
 
