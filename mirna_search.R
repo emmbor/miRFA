@@ -13,6 +13,7 @@ dir.create("results")
 dir.create("results/Target_genes")
 dir.create("results/Venndiagrams")
 dir.create("results/Functional_enrichment")
+dir.create("results/Significant_correlations")
 
 #Create a data frame number of genes
 number_of_genes<-data.frame(matrix(ncol=4,nrow=0))
@@ -228,9 +229,29 @@ mirna_search<-function(miRNA){
               sep=";")
   detach(kegg_paths)
   }
+  
+  
+  # mRNA-protein integration of significant correlations
+  
+  prots<-union(neg_temp_sign_prot$Protein,pos_temp_sign_prot$Protein)
+  mRNAs<-union(neg_temp_sign_mRNA$Gene,pos_temp_sign_mRNA$Gene)
+  both_levels<-intersect(prots,mRNAs)
+  write.table(both_levels,paste0('results/Significant_correlations/',miRNA,'_both_levels.txt'),sep="\t", row.names = FALSE)
+  
+  # Write significant correlations to tables
+  
+  pos_mRNA<-c()
+  neg_mRNA<-c()
+  neg_prot<-c()
+  pos_prot<-c()
+  
+  write.table(pos_temp_sign_mRNA,paste0('results/Significant_correlations/',miRNA,'_pos_mRNA.txt'),sep="\t",row.names = FALSE)
+  write.table(neg_temp_sign_mRNA,paste0('results/Significant_correlations/',miRNA,'_neg_mRNA.txt'),sep="\t",row.names = FALSE)
+  write.table(pos_temp_sign_prot,paste0('results/Significant_correlations/',miRNA,'_pos_prot.txt'),sep="\t",row.names = FALSE)
+  write.table(neg_temp_sign_prot,paste0('results/Significant_correlations/',miRNA,'_neg_prot.txt'),sep="\t",row.names = FALSE)
 
   return(list("number_of_genes"=number_of_genes,"pos_temp_sign_mRNA"=pos_temp_sign_mRNA,
               "neg_temp_sign_mRNA"=neg_temp_sign_mRNA,"pos_temp_sign_prot"=pos_temp_sign_prot,
-              "neg_temp_sign_prot"=neg_temp_sign_prot))
+              "neg_temp_sign_prot"=neg_temp_sign_prot,"both_levels"=both_levels))
 }
 
