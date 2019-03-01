@@ -3,10 +3,17 @@ library(DBI)
 library(RSQLite)
 library(VennDiagram)
 library(edgeR)
+library(gridExtra)
 library(GO.db)
 library(org.Hs.eg.db)
-path="/Users/emmyborgmastars/Documents/Rstats/databases"
-setwd(path)
+#path="/Users/emmyborgmastars/Documents/Rstats/databases"
+#setwd(path)
+
+# Create directories
+dir.create("results")
+dir.create("results/Target_genes")
+dir.create("results/Venndiagrams")
+dir.create("results/Functional_enrichment")
 
 #Create a data frame number of genes
 number_of_genes<-data.frame(matrix(ncol=4,nrow=0))
@@ -93,9 +100,10 @@ mirna_search<-function(miRNA){
   
   targetscan_g<-union(targetscan1_g,union(targetscan2_g,targetscan3_g))
   n_targetscan<-length(targetscan_g)
-  write.table(targetscan_g,paste0('Target_genes/TargetScan_',miRNA,'.txt'))
-  write.table(tarbase_g,paste0('Target_genes/Tarbase_',miRNA,'.txt'))
-  write.table(microT_g,paste0('Target_genes/microT_CDS_',miRNA,'.txt'))
+  
+  write.table(targetscan_g,paste0('results/Target_genes/TargetScan_',miRNA,'.txt'))
+  write.table(tarbase_g,paste0('results/Target_genes/Tarbase_',miRNA,'.txt'))
+  write.table(microT_g,paste0('results/Target_genes/microT_CDS_',miRNA,'.txt'))
   
   ####Create Venn diagram
   
@@ -146,7 +154,7 @@ mirna_search<-function(miRNA){
                      category = c("Tarbase","microT-\n\t\t\t\t\t\t\tCDS","TargetScan"),
                      fill=color,cat.cex=rep(size,3),cex=rep(size,7))
   
-  tiff(width = 7, height = 5, file=paste0('Venndiagrams/',miRNA,'.tiff'), units="in", res=600)
+  tiff(width = 7, height = 5, file=paste0('results/Venndiagrams/',miRNA,'.tiff'), units="in", res=600)
   grid.arrange(gTree(children=g), top=paste0(miRNA))
   dev.off()
   
@@ -208,7 +216,7 @@ mirna_search<-function(miRNA){
   sign_GO<-subset(go,P.DE<=0.05,select=c(Term,Ont,N,DE,P.DE))
   GO_terms<-subset(sign_GO,DE>=5,select=c(Term,Ont,N,DE,P.DE))
   attach(GO_terms)
-  write.table(GO_terms[order(-DE),],paste0('Functional_enrichment/After_evaluation/GO_',miRNA,'.txt'),
+  write.table(GO_terms[order(-DE),],paste0('results/Functional_enrichment/GO_',miRNA,'.txt'),
               sep=";")
   detach(GO_terms)
   
@@ -217,7 +225,7 @@ mirna_search<-function(miRNA){
   sign_kegg<-subset(kegg,P.DE<=0.05,select=c(Pathway,N,DE,P.DE))
   kegg_paths<-subset(sign_kegg,DE>=5,select=c(Pathway,N,DE,P.DE))
   attach(kegg_paths)
-  write.table(kegg_paths[order(-DE),],paste0('Functional_enrichment/After_evaluation/KEGG_',miRNA,'.txt'),
+  write.table(kegg_paths[order(-DE),],paste0('results/Functional_enrichment/KEGG_',miRNA,'.txt'),
               sep=";")
   detach(kegg_paths)
   }
