@@ -1,23 +1,13 @@
 setwd("/Users/emmyborgmastars/Documents/Rstats/databases")
 
-#Run the mirna search function
+#Run the mirna search script
 source("mirna_search.R")
 
 #Import list of mirnas
 mirnas<-read.csv("mirna_list.txt",header=F)
 
-#Start time
-start_time<-Sys.time()
-
 #loop searches with each mirna using test function, margin = 1 (row), 2 (col)
 whole_pipeline<-apply(X = mirnas, MARGIN = 1, FUN = mirna_search)
-
-#Stop time
-end_time<-Sys.time()
-end_time-start_time
-
-#Import gdc samplesheet - only for miRNA annotation 3p and 5p
-gdc_samples<-read.csv("gdc_sample_sheet_2018-02-13-03-23-11.tsv.2018-02-13T14_23_27.088749.tsv",sep="\t",header=T)
 
 setwd("/Users/emmyborgmastars/Documents/Rstats/databases/DATA.DIR/Significant_correlations")
 
