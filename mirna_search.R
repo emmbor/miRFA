@@ -6,8 +6,7 @@ library(edgeR)
 library(gridExtra)
 library(GO.db)
 library(org.Hs.eg.db)
-#path="/Users/emmyborgmastars/Documents/Rstats/databases"
-#setwd(path)
+
 
 # Create directories
 dir.create("results")
