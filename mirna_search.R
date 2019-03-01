@@ -17,7 +17,7 @@ PCC_table<-data.frame(matrix(ncol=4,nrow=0))
 colnames(PCC_table)<-c("miRNA","Gene","PCC","P_value")
 
 correlate_mRNA<-function(gene, miRNA){
-mRNA_con <- dbConnect(SQLite(),'miRNAmRNACor.sqlite')
+mRNA_con <- dbConnect(SQLite(),'mirna_database.sqlite')
 ex_mRNA<-dbGetQuery(mRNA_con, 
                   paste0('SELECT * FROM mRNA WHERE hgnc_symbol IS"',   gene, '"'))
 v_mRNA<-suppressWarnings(as.numeric(ex_mRNA[1,]))
@@ -40,7 +40,7 @@ PCC_p_table<-data.frame(matrix(ncol=4,nrow=0))
 colnames(PCC_p_table)<-c("miRNA","Protein","PCC","P_value")
 
 correlate_prot<-function(prot,miRNA){
-  prot_con <- dbConnect(SQLite(),'miRNAProteinCor.sqlite')
+  prot_con <- dbConnect(SQLite(),'mirna_database.sqlite')
   ex_prot<-dbGetQuery(prot_con, 
                       paste0('SELECT * FROM Protein WHERE protein_name IS"',   prot, '"'))
 
@@ -163,8 +163,8 @@ mirna_search<-function(miRNA){
 
   #proteins
   #Create table
-  prot_con <- dbConnect(SQLite(),'miRNAProteinCor.sqlite')
-  e_miRNA<-dbGetQuery(prot_con, paste0('SELECT * FROM miRNA WHERE mirna_name IS"',   miRNA, '\n"'))
+  prot_con <- dbConnect(SQLite(),'mirna_database.sqlite')
+  e_miRNA<-dbGetQuery(prot_con, paste0('SELECT * FROM miRNA_for_protein WHERE mirna_name IS"',   miRNA, '\n"'))
   p_miRNA<<-suppressWarnings(as.numeric(e_miRNA[1,]))
   cor_prot_list<-lapply(X=uni,FUN=correlate_prot,miRNA=miRNA)
   dbDisconnect(prot_con)
@@ -180,8 +180,8 @@ mirna_search<-function(miRNA){
   
   #mRNAs
   #Create table 
-  mRNA_con <- dbConnect(SQLite(),'miRNAmRNACor.sqlite')
-  ex_miRNA<-dbGetQuery(mRNA_con, paste0('SELECT * FROM miRNA WHERE miRNA_name IS"',   miRNA, '\n"'))
+  mRNA_con <- dbConnect(SQLite(),'mirna_database.sqlite')
+  ex_miRNA<-dbGetQuery(mRNA_con, paste0('SELECT * FROM miRNA_for_mRNA WHERE miRNA_name IS"',   miRNA, '\n"'))
   v_miRNA<<-suppressWarnings(as.numeric(ex_miRNA[1,]))
   cor_mRNA_list<-lapply(X=uni,FUN=correlate_mRNA,miRNA=miRNA)
   dbDisconnect(mRNA_con)
