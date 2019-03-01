@@ -1,0 +1,2 @@
+hsa-miR-144-3p
+hsa-miR-106b-5p
