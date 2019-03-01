@@ -7,13 +7,13 @@ library(gridExtra)
 library(GO.db)
 library(org.Hs.eg.db)
 
-
 # Create directories
-dir.create("results")
-dir.create("results/Target_genes")
-dir.create("results/Venndiagrams")
-dir.create("results/Functional_enrichment")
-dir.create("results/Significant_correlations")
+newpath<-paste0('results_',runname)
+dir.create(newpath)
+dir.create(paste0(newpath,'/Target_genes'))
+dir.create(paste0(newpath,'/Venndiagrams'))
+dir.create(paste0(newpath,'/Functional_enrichment'))
+dir.create(paste0(newpath,'/Significant_correlations'))
 
 #Create a data frame number of genes
 number_of_genes<-data.frame(matrix(ncol=4,nrow=0))
