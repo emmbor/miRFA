@@ -1,13 +1,12 @@
-#Load libraries
-#Required packages: RSQLite,VennDiagram,gridExtra
+#Load packages
 library(DBI)
 library(RSQLite)
 library(VennDiagram)
-library(gridExtra)
 library(edgeR)
 library(GO.db)
 library(org.Hs.eg.db)
-setwd("/Users/emmyborgmastars/Documents/Rstats/databases")
+path="/Users/emmyborgmastars/Documents/Rstats/databases"
+setwd(path)
 
 #Create a data frame number of genes
 number_of_genes<-data.frame(matrix(ncol=4,nrow=0))
@@ -18,7 +17,6 @@ PCC_table<-data.frame(matrix(ncol=4,nrow=0))
 colnames(PCC_table)<-c("miRNA","Gene","PCC","P_value")
 
 correlate_mRNA<-function(gene, miRNA){
-setwd("/Users/emmyborgmastars/Documents/Rstats/databases")
 mRNA_con <- dbConnect(SQLite(),'miRNAmRNACor.sqlite')
 ex_mRNA<-dbGetQuery(mRNA_con, 
                   paste0('SELECT * FROM mRNA WHERE hgnc_symbol IS"',   gene, '"'))
@@ -42,7 +40,6 @@ PCC_p_table<-data.frame(matrix(ncol=4,nrow=0))
 colnames(PCC_p_table)<-c("miRNA","Protein","PCC","P_value")
 
 correlate_prot<-function(prot,miRNA){
-  setwd("/Users/emmyborgmastars/Documents/Rstats/databases")
   prot_con <- dbConnect(SQLite(),'miRNAProteinCor.sqlite')
   ex_prot<-dbGetQuery(prot_con, 
                       paste0('SELECT * FROM Protein WHERE protein_name IS"',   prot, '"'))
@@ -96,7 +93,6 @@ mirna_search<-function(miRNA){
   
   targetscan_g<-union(targetscan1_g,union(targetscan2_g,targetscan3_g))
   n_targetscan<-length(targetscan_g)
-  setwd("/Users/emmyborgmastars/Documents/Rstats/databases/DATA.DIR")
   write.table(targetscan_g,paste0('Target_genes/TargetScan_',miRNA,'.txt'))
   write.table(tarbase_g,paste0('Target_genes/Tarbase_',miRNA,'.txt'))
   write.table(microT_g,paste0('Target_genes/microT_CDS_',miRNA,'.txt'))
@@ -164,8 +160,7 @@ mirna_search<-function(miRNA){
   uni<-union(tarbase_g,union(microT_g,targetscan_g))
   
   ###Correlation analyses
-  setwd("/Users/emmyborgmastars/Documents/Rstats/databases")
-  
+
   #proteins
   #Create table
   prot_con <- dbConnect(SQLite(),'miRNAProteinCor.sqlite')
@@ -208,8 +203,6 @@ mirna_search<-function(miRNA){
   deID<-as.numeric(unlist(mapIds(org.Hs.eg.db,keys=uni2,
                                  column="ENTREZID",keytype="SYMBOL",multiVals="list")))
   
-  setwd("/Users/emmyborgmastars/Documents/Rstats/databases/DATA.DIR")
-  
   #GO
   go<-goana(deID, FDR = 0.05, trend = FALSE, species="Hs")
   sign_GO<-subset(go,P.DE<=0.05,select=c(Term,Ont,N,DE,P.DE))
@@ -228,7 +221,7 @@ mirna_search<-function(miRNA){
               sep=";")
   detach(kegg_paths)
   }
-  setwd("/Users/emmyborgmastars/Documents/Rstats/databases")
+
   return(list("number_of_genes"=number_of_genes,"pos_temp_sign_mRNA"=pos_temp_sign_mRNA,
               "neg_temp_sign_mRNA"=neg_temp_sign_mRNA,"pos_temp_sign_prot"=pos_temp_sign_prot,
               "neg_temp_sign_prot"=neg_temp_sign_prot))
