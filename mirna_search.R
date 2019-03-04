@@ -25,18 +25,27 @@ colnames(PCC_table)<-c("miRNA","Gene","PCC","P_value")
 
 correlate_mRNA<-function(gene, miRNA){
 mRNA_con <- dbConnect(SQLite(),'mirna_database.sqlite')
+
+ex_miRNA<-dbGetQuery(mRNA_con, paste0('SELECT * FROM miRNA_for_mRNA WHERE miRNA_name IS"',   miRNA, '\n"'))
+v_miRNA<-as.numeric(ex_miRNA[,-1])
+
 ex_mRNA<-dbGetQuery(mRNA_con, 
                   paste0('SELECT * FROM mRNA WHERE hgnc_symbol IS"',   gene, '"'))
-v_mRNA<-suppressWarnings(as.numeric(ex_mRNA[1,]))
 
-PCC_value<-suppressWarnings(cor(v_miRNA,v_mRNA,method="pearson",use="na.or.complete"))
-
-if (!is.na(PCC_value)){
-pval<-suppressWarnings(cor.test(v_miRNA,v_mRNA,method="pearson")$p.value)
-
-#Add number of genes information to data frame
-PCC_table<-rbind(PCC_table,
-                  data.frame(miRNA=miRNA,Gene=gene,PCC=PCC_value,P_value=pval))
+if (nrow(ex_mRNA)>0){
+  for (i in seq(1,nrow(ex_mRNA),by=1)){
+      v_mRNA<-as.numeric(ex_mRNA[i,-1])
+      
+      PCC_value<-cor(v_miRNA,v_mRNA,method="pearson",use="na.or.complete")
+      
+      if (!is.na(PCC_value)){
+      pval<-cor.test(v_miRNA,v_mRNA,method="pearson")$p.value
+      
+      #Add number of genes information to data frame
+      PCC_table<-rbind(PCC_table,
+                       data.frame(miRNA=miRNA,Gene=gene,PCC=PCC_value,P_value=pval))
+      }
+      }
 }
 return(PCC_table)
 dbDisconnect(mRNA_con)
@@ -48,20 +57,27 @@ colnames(PCC_p_table)<-c("miRNA","Protein","PCC","P_value")
 
 correlate_prot<-function(prot,miRNA){
   prot_con <- dbConnect(SQLite(),'mirna_database.sqlite')
+  
+  e_miRNA<-dbGetQuery(prot_con, paste0('SELECT * FROM miRNA_for_protein WHERE mirna_name IS"',   miRNA, '\n"'))
+  p_miRNA<-as.numeric(e_miRNA[,-1])
+  
   ex_prot<-dbGetQuery(prot_con, 
                       paste0('SELECT * FROM Protein WHERE protein_name IS"',   prot, '"'))
-
-  v_prot<-suppressWarnings(as.numeric(ex_prot[1,]))
-
-  PCC_value<-suppressWarnings(cor(p_miRNA,v_prot,method="pearson",use="na.or.complete"))
-  
-  if (!is.na(PCC_value)){
-  p_val_s<-suppressWarnings(cor.test(p_miRNA,v_prot,method="pearson")$p.value)
-  
-  #Add number of genes information to data frame
-  PCC_p_table<-rbind(PCC_p_table,
-                    data.frame(miRNA=miRNA,Protein=prot,PCC=PCC_value,P_value=p_val_s))
+  if (nrow(ex_prot)>0){
+    
+    for (i in seq(1, nrow(ex_prot),by=1)){
+      v_prot<-as.numeric(ex_prot[i,-1])
+      PCC_value<-cor(p_miRNA,v_prot,method="pearson",use="na.or.complete")
+        if (!is.na(PCC_value)){
+        p_val_s<-cor.test(p_miRNA,v_prot,method="pearson")$p.value
+        }
+      
+      #Add number of genes information to data frame
+      PCC_p_table<-rbind(PCC_p_table,
+                         data.frame(miRNA=miRNA,Protein=prot,PCC=PCC_value,P_value=p_val_s))
+    }
   }
+  
   return(PCC_p_table)
   dbDisconnect(prot_con)
 }
@@ -170,16 +186,13 @@ mirna_search<-function(miRNA){
   
   ###Correlation analyses
 
-  #proteins
-  #Create table
-  prot_con <- dbConnect(SQLite(),'mirna_database.sqlite')
-  e_miRNA<-dbGetQuery(prot_con, paste0('SELECT * FROM miRNA_for_protein WHERE mirna_name IS"',   miRNA, '\n"'))
-  p_miRNA<<-suppressWarnings(as.numeric(e_miRNA[1,]))
+  ## Proteins
   cor_prot_list<-lapply(X=uni,FUN=correlate_prot,miRNA=miRNA)
-  dbDisconnect(prot_con)
+  
+  # Merge all protein correlations into one table
+  prot_df<-do.call(rbind.data.frame, cor_prot_list)
   
   #Multiple testing
-  prot_df<-do.call(rbind.data.frame, cor_prot_list)
   adj_P_s<-p.adjust(prot_df$P_value, method="BH")
   prot_df<-cbind(prot_df,adj_P_s)
   temp_sign_prot<-subset(prot_df, adj_P_s < 0.05, select=c(miRNA,Protein,PCC,P_value,adj_P_s))
@@ -187,16 +200,13 @@ mirna_search<-function(miRNA){
   neg_temp_sign_prot<-subset(temp_sign_prot, PCC <= 0, select=c(miRNA,Protein,PCC,P_value,adj_P_s))
   proteins<-union(as.vector(pos_temp_sign_prot$Protein),as.vector(neg_temp_sign_prot$Protein))
   
-  #mRNAs
-  #Create table 
-  mRNA_con <- dbConnect(SQLite(),'mirna_database.sqlite')
-  ex_miRNA<-dbGetQuery(mRNA_con, paste0('SELECT * FROM miRNA_for_mRNA WHERE miRNA_name IS"',   miRNA, '\n"'))
-  v_miRNA<<-suppressWarnings(as.numeric(ex_miRNA[1,]))
+  ## mRNAs
   cor_mRNA_list<-lapply(X=uni,FUN=correlate_mRNA,miRNA=miRNA)
-  dbDisconnect(mRNA_con)
+  
+  # Merge all mRNA correlations into one table
+  mRNA_df<-do.call(rbind.data.frame, cor_mRNA_list)
   
   #Multiple testing
-  mRNA_df<-do.call(rbind.data.frame, cor_mRNA_list)
   adj_P_p<-p.adjust(mRNA_df$P_value, method="BH")
   mRNA_df<-cbind(mRNA_df,adj_P_p)
   temp_sign_mRNA<-subset(mRNA_df, adj_P_p < 0.05, select=c(miRNA,Gene,PCC,P_value,adj_P_p))
