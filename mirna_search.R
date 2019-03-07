@@ -70,11 +70,12 @@ correlate_prot<-function(prot,miRNA){
       PCC_value<-cor(p_miRNA,v_prot,method="pearson",use="na.or.complete")
         if (!is.na(PCC_value)){
         p_val_s<-cor.test(p_miRNA,v_prot,method="pearson")$p.value
+        #Add number of genes information to data frame
+        PCC_p_table<-rbind(PCC_p_table,
+                           data.frame(miRNA=miRNA,Protein=prot,PCC=PCC_value,P_value=p_val_s))
         }
       
-      #Add number of genes information to data frame
-      PCC_p_table<-rbind(PCC_p_table,
-                         data.frame(miRNA=miRNA,Protein=prot,PCC=PCC_value,P_value=p_val_s))
+
     }
   }
   
