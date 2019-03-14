@@ -1,5 +1,5 @@
-if (!dir.exists("results")){
-  dir.create("results")
+if (!dir.exists("../results")){
+  dir.create("..results")
 }
 
 p <- argparser::arg_parser(description = "Description of program")
@@ -28,5 +28,5 @@ run_name <- argv$n
 if (is.na(run_name)){
   run_name <- sub(pattern = "\\..*$", replacement = "", x = basename(argv$input))
 }
-print(getwd())
+
 whole_pipeline <- apply(X = mirnas, MARGIN = 1, FUN = mirna_search, run_name = argv$n)

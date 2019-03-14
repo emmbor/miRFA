@@ -59,7 +59,7 @@ correlate_prot<-function(prot, miRNA, PCC_p_table){
 mirna_search<-function(miRNA, run_name = NULL){
 
   # Create directories
-  newpath<-paste0('results/',run_name)
+  newpath<-paste0('../results/',run_name)
   dir.create(newpath)
   dir.create(paste0(newpath,'/Target_genes'))
   dir.create(paste0(newpath,'/Venndiagrams'))
