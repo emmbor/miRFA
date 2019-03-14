@@ -1,62 +1,35 @@
-#Load packages
-library(DBI)
-library(RSQLite)
-library(VennDiagram)
-library(edgeR)
-library(gridExtra)
-library(GO.db)
-library(org.Hs.eg.db)
-
-# Create directories
-newpath<-paste0('results_',runname)
-dir.create(newpath)
-dir.create(paste0(newpath,'/Target_genes'))
-dir.create(paste0(newpath,'/Venndiagrams'))
-dir.create(paste0(newpath,'/Functional_enrichment'))
-dir.create(paste0(newpath,'/Significant_correlations'))
-
-#Create a data frame number of genes
-number_of_genes<-data.frame(matrix(ncol=4,nrow=0))
-colnames(number_of_genes)<-c("miRNA_ID","Tarbase","microT_CDS","TargetScan")
-
-#Create data frame for PCC 
-PCC_table<-data.frame(matrix(ncol=4,nrow=0))
-colnames(PCC_table)<-c("miRNA","Gene","PCC","P_value")
-
-correlate_mRNA<-function(gene, miRNA){
-mRNA_con <- dbConnect(SQLite(),'mirna_database.sqlite')
-
-ex_miRNA<-dbGetQuery(mRNA_con, paste0('SELECT * FROM miRNA_for_mRNA WHERE miRNA_name IS"',   miRNA, '\n"'))
-v_miRNA<-as.numeric(ex_miRNA[,-1])
-
-ex_mRNA<-dbGetQuery(mRNA_con, 
-                  paste0('SELECT * FROM mRNA WHERE hgnc_symbol IS"',   gene, '"'))
-
-if (nrow(ex_mRNA)>0){
-  for (i in seq(1,nrow(ex_mRNA),by=1)){
+correlate_mRNA<-function(gene, miRNA, PCC_table){
+  mRNA_con <- dbConnect(SQLite(),'../database/mirna_database.sqlite')
+  
+  ex_miRNA<-dbGetQuery(mRNA_con, paste0('SELECT * FROM miRNA_for_mRNA WHERE miRNA_name IS"',   miRNA, '\n"'))
+  v_miRNA<-as.numeric(ex_miRNA[,-1])
+  
+  ex_mRNA<-dbGetQuery(mRNA_con, 
+                      paste0('SELECT * FROM mRNA WHERE hgnc_symbol IS"',   gene, '"'))
+  
+  if (nrow(ex_mRNA)>0){
+    for (i in seq(1,nrow(ex_mRNA),by=1)){
       v_mRNA<-as.numeric(ex_mRNA[i,-1])
       
       PCC_value<-cor(v_miRNA,v_mRNA,method="pearson",use="na.or.complete")
       
       if (!is.na(PCC_value)){
-      pval<-cor.test(v_miRNA,v_mRNA,method="pearson")$p.value
-      
-      #Add number of genes information to data frame
-      PCC_table<-rbind(PCC_table,
-                       data.frame(miRNA=miRNA,Gene=gene,PCC=PCC_value,P_value=pval))
+        pval<-cor.test(v_miRNA,v_mRNA,method="pearson")$p.value
+        
+        #Add number of genes information to data frame
+        PCC_table<-rbind(PCC_table,
+                         data.frame(miRNA=miRNA,Gene=gene,PCC=PCC_value,P_value=pval))
       }
-      }
-}
-return(PCC_table)
-dbDisconnect(mRNA_con)
+    }
+  }
+  return(PCC_table)
+  dbDisconnect(mRNA_con)
 }
 
-#Create data frame for protein
-PCC_p_table<-data.frame(matrix(ncol=4,nrow=0))
-colnames(PCC_p_table)<-c("miRNA","Protein","PCC","P_value")
 
-correlate_prot<-function(prot,miRNA){
-  prot_con <- dbConnect(SQLite(),'mirna_database.sqlite')
+
+correlate_prot<-function(prot, miRNA, PCC_p_table){
+  prot_con <- dbConnect(SQLite(),'../database/mirna_database.sqlite')
   
   e_miRNA<-dbGetQuery(prot_con, paste0('SELECT * FROM miRNA_for_protein WHERE mirna_name IS"',   miRNA, '\n"'))
   p_miRNA<-as.numeric(e_miRNA[,-1])
@@ -68,14 +41,14 @@ correlate_prot<-function(prot,miRNA){
     for (i in seq(1, nrow(ex_prot),by=1)){
       v_prot<-as.numeric(ex_prot[i,-1])
       PCC_value<-cor(p_miRNA,v_prot,method="pearson",use="na.or.complete")
-        if (!is.na(PCC_value)){
+      if (!is.na(PCC_value)){
         p_val_s<-cor.test(p_miRNA,v_prot,method="pearson")$p.value
         #Add number of genes information to data frame
         PCC_p_table<-rbind(PCC_p_table,
                            data.frame(miRNA=miRNA,Protein=prot,PCC=PCC_value,P_value=p_val_s))
-        }
+      }
       
-
+      
     }
   }
   
@@ -83,13 +56,34 @@ correlate_prot<-function(prot,miRNA){
   dbDisconnect(prot_con)
 }
 
-mirna_search<-function(miRNA){
+mirna_search<-function(miRNA, run_name = NULL){
 
+  # Create directories
+  newpath<-paste0('../results/',run_name)
+  dir.create(newpath)
+  dir.create(paste0(newpath,'/Target_genes'))
+  dir.create(paste0(newpath,'/Venndiagrams'))
+  dir.create(paste0(newpath,'/Functional_enrichment'))
+  dir.create(paste0(newpath,'/Significant_correlations'))
+  
+  #Create a data frame number of genes
+  number_of_genes<-data.frame(matrix(ncol=4,nrow=0))
+  colnames(number_of_genes)<-c("miRNA_ID","Tarbase","microT_CDS","TargetScan")
+  
+  #Create data frame for PCC 
+  PCC_table<-data.frame(matrix(ncol=4,nrow=0))
+  colnames(PCC_table)<-c("miRNA","Gene","PCC","P_value")
+  
+  
+  #Create data frame for protein
+  PCC_p_table<-data.frame(matrix(ncol=4,nrow=0))
+  colnames(PCC_p_table)<-c("miRNA","Protein","PCC","P_value")
+  
   #Connect to mirna_database
-  con <- dbConnect(SQLite(),'mirna_database.sqlite')
+  con <- dbConnect(SQLite(),'../database/mirna_database.sqlite')
   
   ##Search query mirna
-
+  
   #Tarbase
   tarbase<-dbGetQuery(con, paste0('SELECT * FROM Tarbase WHERE mirna IS"',   miRNA, '"'))
   tarbase_g<-unique(tarbase$geneName)
@@ -178,17 +172,17 @@ mirna_search<-function(miRNA){
   
   #Add number of genes information to data frame
   number_of_genes<-rbind(number_of_genes,
-                    data.frame(miRNA_ID=miRNA,Tarbase=n_tarbase,
-                    microT_CDS=n_microT,TargetScan=n_targetscan))
-
+                         data.frame(miRNA_ID=miRNA,Tarbase=n_tarbase,
+                                    microT_CDS=n_microT,TargetScan=n_targetscan))
+  
   #Union of target genes 
-  uni<-union(tarbase_g,union(microT_g,targetscan_g))
+  uni <-union(tarbase_g,union(microT_g,targetscan_g))
   write.table(uni,paste0(newpath,'/Target_genes/union_targets_',miRNA,'.txt'))
   
   ###Correlation analyses
-
+  
   ## Proteins
-  cor_prot_list<-lapply(X=uni,FUN=correlate_prot,miRNA=miRNA)
+  cor_prot_list <- lapply(X=uni,FUN=correlate_prot, miRNA=miRNA, PCC_p_table = PCC_p_table)
   
   # Merge all protein correlations into one table
   prot_df<-do.call(rbind.data.frame, cor_prot_list)
@@ -202,7 +196,7 @@ mirna_search<-function(miRNA){
   proteins<-union(as.vector(pos_temp_sign_prot$Protein),as.vector(neg_temp_sign_prot$Protein))
   
   ## mRNAs
-  cor_mRNA_list<-lapply(X=uni,FUN=correlate_mRNA,miRNA=miRNA)
+  cor_mRNA_list<-lapply(X=uni, FUN=correlate_mRNA, miRNA=miRNA, PCC_table = PCC_table)
   
   # Merge all mRNA correlations into one table
   mRNA_df<-do.call(rbind.data.frame, cor_mRNA_list)
@@ -218,28 +212,28 @@ mirna_search<-function(miRNA){
   uni2<-union(mRNAs,proteins)
   
   if(length(uni2)>0) {
-
-  ###Functional enrichment after evaluation - union of mRNA and protein
-  deID<-as.numeric(unlist(mapIds(org.Hs.eg.db,keys=uni2,
-                                 column="ENTREZID",keytype="SYMBOL",multiVals="list")))
-  
-  #GO
-  go<-goana(deID, FDR = 0.05, trend = FALSE, species="Hs")
-  sign_GO<-subset(go,P.DE<=0.05,select=c(Term,Ont,N,DE,P.DE))
-  GO_terms<-subset(sign_GO,DE>=5,select=c(Term,Ont,N,DE,P.DE))
-  attach(GO_terms)
-  write.table(GO_terms[order(-DE),],paste0(newpath,'/Functional_enrichment/GO_',miRNA,'.txt'),
-              sep=";")
-  detach(GO_terms)
-  
-  #KEGG
-  kegg<-kegga(deID, FDR = 0.05, trend = FALSE, species="Hs")
-  sign_kegg<-subset(kegg,P.DE<=0.05,select=c(Pathway,N,DE,P.DE))
-  kegg_paths<-subset(sign_kegg,DE>=5,select=c(Pathway,N,DE,P.DE))
-  attach(kegg_paths)
-  write.table(kegg_paths[order(-DE),],paste0(newpath,'/Functional_enrichment/KEGG_',miRNA,'.txt'),
-              sep=";")
-  detach(kegg_paths)
+    
+    ###Functional enrichment after evaluation - union of mRNA and protein
+    deID<-as.numeric(unlist(mapIds(org.Hs.eg.db,keys=uni2,
+                                   column="ENTREZID",keytype="SYMBOL",multiVals="list")))
+    
+    #GO
+    go<-goana(deID, FDR = 0.05, trend = FALSE, species="Hs")
+    sign_GO<-subset(go,P.DE<=0.05,select=c(Term,Ont,N,DE,P.DE))
+    GO_terms<-subset(sign_GO,DE>=5,select=c(Term,Ont,N,DE,P.DE))
+    attach(GO_terms)
+    write.table(GO_terms[order(-DE),],paste0(newpath,'/Functional_enrichment/GO_',miRNA,'.txt'),
+                sep=";")
+    detach(GO_terms)
+    
+    #KEGG
+    kegg<-kegga(deID, FDR = 0.05, trend = FALSE, species="Hs")
+    sign_kegg<-subset(kegg,P.DE<=0.05,select=c(Pathway,N,DE,P.DE))
+    kegg_paths<-subset(sign_kegg,DE>=5,select=c(Pathway,N,DE,P.DE))
+    attach(kegg_paths)
+    write.table(kegg_paths[order(-DE),],paste0(newpath,'/Functional_enrichment/KEGG_',miRNA,'.txt'),
+                sep=";")
+    detach(kegg_paths)
   }
   
   
@@ -261,9 +255,11 @@ mirna_search<-function(miRNA){
   write.table(neg_temp_sign_mRNA,paste0(newpath,'/Significant_correlations/',miRNA,'_neg_mRNA.txt'),sep="\t",row.names = FALSE)
   write.table(pos_temp_sign_prot,paste0(newpath,'/Significant_correlations/',miRNA,'_pos_prot.txt'),sep="\t",row.names = FALSE)
   write.table(neg_temp_sign_prot,paste0(newpath,'/Significant_correlations/',miRNA,'_neg_prot.txt'),sep="\t",row.names = FALSE)
-
+  
   return(list("number_of_genes"=number_of_genes,"pos_temp_sign_mRNA"=pos_temp_sign_mRNA,
               "neg_temp_sign_mRNA"=neg_temp_sign_mRNA,"pos_temp_sign_prot"=pos_temp_sign_prot,
               "neg_temp_sign_prot"=neg_temp_sign_prot,"both_levels"=both_levels))
 }
+
+
 
