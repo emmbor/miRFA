@@ -1,5 +1,5 @@
 correlate_mRNA<-function(gene, miRNA, PCC_table){
-  mRNA_con <- dbConnect(SQLite(),'../database/mirna_database.sqlite')
+  mRNA_con <- dbConnect(SQLite(),'database/mirna_database.sqlite')
   
   ex_miRNA<-dbGetQuery(mRNA_con, paste0('SELECT * FROM miRNA_for_mRNA WHERE miRNA_name IS"',   miRNA, '\n"'))
   v_miRNA<-as.numeric(ex_miRNA[,-1])
@@ -29,7 +29,7 @@ correlate_mRNA<-function(gene, miRNA, PCC_table){
 
 
 correlate_prot<-function(prot, miRNA, PCC_p_table){
-  prot_con <- dbConnect(SQLite(),'../database/mirna_database.sqlite')
+  prot_con <- dbConnect(SQLite(),'database/mirna_database.sqlite')
   
   e_miRNA<-dbGetQuery(prot_con, paste0('SELECT * FROM miRNA_for_protein WHERE mirna_name IS"',   miRNA, '\n"'))
   p_miRNA<-as.numeric(e_miRNA[,-1])
@@ -56,10 +56,12 @@ correlate_prot<-function(prot, miRNA, PCC_p_table){
   dbDisconnect(prot_con)
 }
 
-mirna_search<-function(miRNA, run_name = NULL){
-
+mirna_search<-function(miRNA, min_n_genes = 5, microt_cutoff = 0.7, run_name = NULL){
+  
+  print(min_n_genes)
+  print(microt_cutoff)
   # Create directories
-  newpath<-paste0('../results/',run_name)
+  newpath<-paste0('results/',run_name)
   dir.create(newpath)
   dir.create(paste0(newpath,'/Target_genes'))
   dir.create(paste0(newpath,'/Venndiagrams'))
@@ -80,18 +82,20 @@ mirna_search<-function(miRNA, run_name = NULL){
   colnames(PCC_p_table)<-c("miRNA","Protein","PCC","P_value")
   
   #Connect to mirna_database
-  con <- dbConnect(SQLite(),'../database/mirna_database.sqlite')
+  con <- dbConnect(SQLite(),'database/mirna_database.sqlite')
   
   ##Search query mirna
   
   #Tarbase
   tarbase<-dbGetQuery(con, paste0('SELECT * FROM Tarbase WHERE mirna IS"',   miRNA, '"'))
-  tarbase_g<-unique(tarbase$geneName)
+  tarbase_g<<-unique(tarbase$geneName)
   n_tarbase<-length(tarbase_g)
   
   #microT_CDS
-  microT_CDS<-dbGetQuery(con, paste0('SELECT * FROM microT_CDS WHERE mirna IS"',   miRNA, '"','AND miTG_score>=0.7'))
-  microT_g<-unique(microT_CDS$gene_name)
+  query <- sprintf('SELECT * FROM microT_CDS WHERE mirna IS "%s" AND miTG_score>= %s', miRNA, microt_cutoff)
+  print(query)
+  microT_CDS<-dbGetQuery(con, query)
+  microT_g<<-unique(microT_CDS$gene_name)
   n_microT<-length(microT_g)
   
   ###TargetScan
@@ -109,7 +113,7 @@ mirna_search<-function(miRNA, run_name = NULL){
   
   dbDisconnect(con)
   
-  targetscan_g<-union(targetscan1_g,union(targetscan2_g,targetscan3_g))
+  targetscan_g<<-union(targetscan1_g,union(targetscan2_g,targetscan3_g))
   n_targetscan<-length(targetscan_g)
   
   write.table(targetscan_g,paste0(newpath,'/Target_genes/TargetScan_',miRNA,'.txt'))
@@ -220,7 +224,7 @@ mirna_search<-function(miRNA, run_name = NULL){
     #GO
     go<-goana(deID, FDR = 0.05, trend = FALSE, species="Hs")
     sign_GO<-subset(go,P.DE<=0.05,select=c(Term,Ont,N,DE,P.DE))
-    GO_terms<-subset(sign_GO,DE>=5,select=c(Term,Ont,N,DE,P.DE))
+    GO_terms<-subset(sign_GO,DE>=min_n_genes,select=c(Term,Ont,N,DE,P.DE))
     attach(GO_terms)
     write.table(GO_terms[order(-DE),],paste0(newpath,'/Functional_enrichment/GO_',miRNA,'.txt'),
                 sep=";")
@@ -229,7 +233,7 @@ mirna_search<-function(miRNA, run_name = NULL){
     #KEGG
     kegg<-kegga(deID, FDR = 0.05, trend = FALSE, species="Hs")
     sign_kegg<-subset(kegg,P.DE<=0.05,select=c(Pathway,N,DE,P.DE))
-    kegg_paths<-subset(sign_kegg,DE>=5,select=c(Pathway,N,DE,P.DE))
+    kegg_paths<-subset(sign_kegg,DE>=min_n_genes,select=c(Pathway,N,DE,P.DE))
     attach(kegg_paths)
     write.table(kegg_paths[order(-DE),],paste0(newpath,'/Functional_enrichment/KEGG_',miRNA,'.txt'),
                 sep=";")

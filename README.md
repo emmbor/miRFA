@@ -42,24 +42,28 @@ install.packages(c("argparser",
 
 ### Installing
 
-Clone or download the repository, install the package dependencies if needed and download the miRNA database and put it in the database folder. The database first needs to be downloaded from onedrive (requires Microsoft account) using the following link:
+Clone or download the repository, install the package dependencies if needed and download the miRNA database and put it in the database folder. The database first needs to be downloaded from OneDrive (requires Microsoft account) using the following link:
 
 https://1drv.ms/u/s!Ap_ICu6nvktNgW6Y68Zkp1HTx0vE
 
 ## Running the pipeline
-The pipeline is executed on the command line with the script run_pipeline.R that can be found in the pipeline folder.
-It takes one required and one 1 optional argument.
+The pipeline is executed on the command line with the script run_pipeline.R that can be found in the main miRFA folder.
+It takes one required and three optional arguments.
 
 The required argument is an input file in the format of text file with one mature miRNA per line.  Notice that the input miRNA has to be a mature miRNA name, e.g. 'hsa-miR-885-5p'.
 
-The optional argument, -n,  is a name for the run, the results will be stored in the results folder under results/run_name. If no argument is given the run_name will be the filename of the input file.
+The first optional argument, -n,  is a name for the run, the results will be stored in the results folder under results/run_name. If no argument is given the run_name will be the filename of the input file.
+
+The second optional argument, -g, is the minimum number of genes for enrichment. When this argument is not given it defaults to 5
+
+The third optional argument, -t, is the threshold for microt-CDS. It should be between 0 and 1. When this argument is not given if defaults to 0.7
 
 ### Demo run
 
-There is an example input file included under data/demo_input.txt. To run the example:
+There is an example input file included under data/demo_input.txt. To run the example with all parameters:
 
 ```bash
-Rscript run_pipeline.R ../data/demo_input.txt -n testrun
+Rscript run_pipeline.R data/demo_input.txt -n testrun -g 4 -t 0.8
 ```
 
 ### Output
