@@ -42,9 +42,9 @@ install.packages(c("argparser",
 
 ### Installing
 
-Clone or download the repository, install the package dependencies if needed and download the miRNA database and put it in the database folder. The database first needs to be downloaded from OneDrive (requires Microsoft account) using the following link:
+Clone or download the repository, install the package dependencies if needed and download the miRNA database and put it in the database folder. The database first needs to be downloaded from OneDrive using the following link:
 
-https://1drv.ms/u/s!Ap_ICu6nvktNgW6Y68Zkp1HTx0vE
+[https://1drv.ms/u/s!Ap_ICu6nvktNgW6Y68Zkp1HTx0vE](https://umeauniversity-my.sharepoint.com/:u:/g/personal/embo0061_ad_umu_se/EVlUcYg7CP1KoJF17w_p8CUBJZVAepXeyhk-Tv8aB0cmTQ?e=Qg6118)
 
 ## Running the pipeline
 The pipeline is executed on the command line with the script run_pipeline.R that can be found in the main miRFA folder.
